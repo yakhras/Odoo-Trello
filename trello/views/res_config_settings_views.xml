@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_trello" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.trello</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="project.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='project']" position="inside">
+                <block title="Trello" name="trello_settings">
+                    <setting id="trello_api" string="Trello API"
+                             help="API key and token from trello.com/apps/admin (Power-Up > Trello Auth tab).">
+                        <div class="content-group">
+                            <div class="row mt8">
+                                <label for="trello_api_key" class="col-lg-3 o_light_label"/>
+                                <field name="trello_api_key"/>
+                            </div>
+                            <div class="row">
+                                <label for="trello_api_token" class="col-lg-3 o_light_label"/>
+                                <field name="trello_api_token" password="True"/>
+                            </div>
+                            <div class="mt8">
+                                <button name="action_trello_test_connection" type="object" string="Test Connection"
+                                        icon="oi-arrow-right" class="btn-link"/>
+                                <button name="action_trello_fetch_boards" type="object" string="Fetch Boards"
+                                        icon="oi-arrow-right" class="btn-link"/>
+                            </div>
+                        </div>
+                    </setting>
+                    <setting id="trello_options" string="Sync Options"
+                             help="Labels flagged as priority star the task; large uploads are kept as links.">
+                        <div class="content-group">
+                            <div class="row mt8">
+                                <label for="trello_priority_labels" class="col-lg-3 o_light_label"/>
+                                <field name="trello_priority_labels"/>
+                            </div>
+                            <div class="row">
+                                <label for="trello_max_attachment_mb" class="col-lg-3 o_light_label"/>
+                                <field name="trello_max_attachment_mb"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

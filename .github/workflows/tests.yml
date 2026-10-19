@@ -1,0 +1,35 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  odoo-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: odoo:19.0
+      options: --user root
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the module and run its tests
+        run: |
+          odoo --db_host postgres --db_user odoo --db_password odoo -d test \
+               --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE" \
+               -i trello --test-tags /trello \
+               --stop-after-init --http-port=8099 2>&1 | tee test.log
+          grep -q "0 failed, 0 error(s)" test.log
+          ! grep -E "^[0-9-]+ [0-9:,]+ [0-9]+ (ERROR|CRITICAL) " test.log

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_task_form_trello" model="ir.ui.view">
+        <field name="name">project.task.form.trello</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[@name='description_page']" position="after">
+                <page name="trello" string="Trello" invisible="not trello_card_id">
+                    <group>
+                        <group>
+                            <field name="trello_card_name"
+                                   invisible="not trello_card_name or trello_card_name == name"/>
+                            <field name="trello_url" widget="url"/>
+                        </group>
+                        <group>
+                            <field name="trello_board_ref_id"/>
+                            <field name="trello_card_id" groups="base.group_no_one"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="trello_label_view_list" model="ir.ui.view">
+        <field name="name">project.tags.list.trello</field>
+        <field name="model">project.tags</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0">
+                <field name="name" readonly="1"/>
+                <field name="trello_priority"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_trello_label" model="ir.actions.act_window">
+        <field name="name">Trello Labels</field>
+        <field name="res_model">project.tags</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="trello_label_view_list"/>
+        <field name="domain">[('trello_imported', '=', True)]</field>
+    </record>
+</odoo>

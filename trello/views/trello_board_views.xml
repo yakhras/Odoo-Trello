@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="trello_board_view_list" model="ir.ui.view">
+        <field name="name">trello.board.list</field>
+        <field name="model">trello.board</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'paused'" decoration-warning="unmapped_count > 0">
+                <field name="name"/>
+                <field name="link_mode"/>
+                <field name="project_id"/>
+                <field name="unmapped_count" string="Unmapped Lists"/>
+                <field name="last_sync"/>
+                <field name="state" widget="badge" decoration-info="state in ('draft', 'lists')"
+                       decoration-success="state == 'active'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="trello_board_view_search" model="ir.ui.view">
+        <field name="name">trello.board.search</field>
+        <field name="model">trello.board</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="project_id"/>
+                <filter name="to_map" string="To Map" domain="[('state', 'in', ('draft', 'lists'))]"/>
+                <filter name="active_boards" string="Active" domain="[('state', '=', 'active')]"/>
+                <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="trello_board_view_form" model="ir.ui.view">
+        <field name="name">trello.board.form</field>
+        <field name="model">trello.board</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_confirm" type="object" string="Confirm" class="btn-primary"
+                            invisible="state != 'draft'" groups="project.group_project_manager"/>
+                    <button name="action_activate" type="object" string="Activate" class="btn-primary"
+                            invisible="state != 'lists'" groups="project.group_project_manager"/>
+                    <button name="action_apply_list_mapping" type="object" string="Apply List Mappings"
+                            class="btn-primary" invisible="state not in ('active', 'paused') or unmapped_count == 0"
+                            groups="project.group_project_manager"/>
+                    <button name="action_sync" type="object" string="Sync Now"
+                            invisible="state != 'active'" groups="project.group_project_manager"/>
+                    <button name="action_reload_lists" type="object" string="Reload Lists"
+                            invisible="state == 'draft'" groups="project.group_project_manager"/>
+                    <button name="action_pause" type="object" string="Pause"
+                            invisible="state != 'active'" groups="project.group_project_manager"/>
+                    <button name="action_resume" type="object" string="Resume"
+                            invisible="state != 'paused'" groups="project.group_project_manager"/>
+                    <button name="action_unlink_project" type="object" string="Unlink"
+                            invisible="state == 'draft'" groups="project.group_project_manager"
+                            confirm="This removes the list mappings and the Trello references on the project and its tasks. No Odoo record is deleted. Continue?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,lists,active"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="unmapped_count == 0 or state == 'lists'">
+                        <field name="unmapped_count" class="oe_inline"/> unmapped list(s): their cards are skipped
+                        until you map them and click "Apply List Mappings".
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not last_error">
+                        <field name="last_error"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Trello">
+                            <field name="url" widget="url"/>
+                            <field name="trello_id"/>
+                            <field name="closed"/>
+                        </group>
+                        <group string="Odoo">
+                            <field name="link_mode" widget="radio" readonly="state != 'draft'"/>
+                            <field name="project_id" readonly="state != 'draft'"
+                                   required="link_mode == 'existing'"
+                                   invisible="link_mode == 'new' and not project_id"
+                                   domain="[('trello_board_id', 'in', [False, trello_id])]"/>
+                            <field name="last_sync"/>
+                            <field name="comments_since" groups="base.group_no_one"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="List Mappings" name="lists" invisible="state == 'draft'">
+                            <field name="list_map_ids">
+                                <list editable="bottom" create="0" delete="0"
+                                      decoration-warning="state == 'unmapped'" decoration-muted="closed">
+                                    <field name="name"/>
+                                    <field name="closed" optional="hide"/>
+                                    <field name="mode"/>
+                                    <field name="stage_id" readonly="mode == 'new'" required="mode == 'merge'"
+                                           domain="parent.project_id and [('project_ids', 'in', [parent.project_id])] or []"
+                                           options="{'no_create': True}"/>
+                                    <field name="task_state"/>
+                                    <field name="state" widget="badge" decoration-warning="state == 'unmapped'"
+                                           decoration-success="state == 'mapped'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_trello_board" model="ir.actions.act_window">
+        <field name="name">Trello Boards</field>
+        <field name="res_model">trello.board</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No Trello board yet</p>
+            <p>Set your API key and token in Project &gt; Configuration &gt; Settings, then click "Fetch Boards".</p>
+        </field>
+    </record>
+</odoo>
