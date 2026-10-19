@@ -76,6 +76,36 @@ Other buttons on the board:
 - **Apply List Mappings** applies the mappings for lists added later.
 - **Unlink** detaches the board. The project and tasks stay.
 
+The screenshots below use **generated demo data**, not real boards.
+
+**Settings:** the API key and the token, which is masked (1), with **Test Connection** and **Fetch Boards**. The priority label names and the maximum attachment size (2).
+
+![Settings](trello/docs/settings.png)
+
+**Boards:** every fetched board with its project (1) and status (2). Nothing syncs until a board is **Active**.
+
+![Boards](trello/docs/boards.png)
+
+**Mapping a board:** link to an existing project or create a new one (1). Then, for each list, merge it into an existing stage or create a new one, and choose the task state for its cards (2). **Activate** (3) applies the mappings.
+
+![Mapping a board](trello/docs/board_lists.png)
+
+**An active board:** a list added in Trello later raises a warning (1) and waits as **Unmapped** (2), and its cards are skipped until you map it. **Sync Now** (3) runs the sync right away.
+
+![An active board](trello/docs/board_active.png)
+
+**The imported tasks:** lists became stages, labels became tags, and the **Urgent** label gives the star (1).
+
+![Imported tasks](trello/docs/tasks.png)
+
+**One task:** the card's description with its checklist (1), the attachments: an uploaded image and a link (2), and the Trello comments as notes, with their author and date (3).
+
+![One task](trello/docs/task.png)
+
+**The Trello tab:** this task was renamed in Odoo (1), so the tab shows the card's own name (2) and links to the card (3). The task stays linked to its card, so the sync updates it instead of creating a duplicate.
+
+![Trello tab](trello/docs/task_trello.png)
+
 Trello allows 100 requests per 10 seconds per token. A sync uses about 3 requests per board, and the module waits and retries when Trello answers with a rate-limit error.
 
 ## Tests
