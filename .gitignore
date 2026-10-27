@@ -227,3 +227,6 @@ __marimo__/
 *.rej
 *~
 
+
+# Local working notes (not part of the module)
+working_history/
