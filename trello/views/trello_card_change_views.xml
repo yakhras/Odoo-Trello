@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="trello_card_change_view_list" model="ir.ui.view">
+        <field name="name">trello.card.change.list</field>
+        <field name="model">trello.card.change</field>
+        <field name="arch" type="xml">
+            <list create="0" decoration-muted="state != 'pending'">
+                <header>
+                    <button name="action_apply" type="object" string="Apply" class="btn-primary"
+                            groups="project.group_project_manager"/>
+                    <button name="action_ignore" type="object" string="Ignore"
+                            groups="project.group_project_manager"/>
+                </header>
+                <field name="fetch_date"/>
+                <field name="board_id"/>
+                <field name="name"/>
+                <field name="kind" widget="badge" decoration-success="kind == 'new'"
+                       decoration-info="kind == 'update'" decoration-warning="kind == 'archive'"/>
+                <field name="task_id"/>
+                <field name="list_map_id" optional="show"/>
+                <field name="stage_id" optional="show"/>
+                <field name="card_closed" optional="show"/>
+                <field name="state" widget="badge" decoration-info="state == 'pending'"
+                       decoration-success="state == 'applied'"/>
+                <button name="action_apply" type="object" string="Apply" icon="fa-check"
+                        invisible="state != 'pending'" groups="project.group_project_manager"/>
+                <button name="action_ignore" type="object" string="Ignore" icon="fa-times"
+                        invisible="state != 'pending'" groups="project.group_project_manager"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="trello_card_change_view_search" model="ir.ui.view">
+        <field name="name">trello.card.change.search</field>
+        <field name="model">trello.card.change</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="board_id"/>
+                <field name="task_id"/>
+                <filter name="pending" string="Pending" domain="[('state', '=', 'pending')]"/>
+                <filter name="ignored" string="Ignored" domain="[('state', '=', 'ignored')]"/>
+                <filter name="applied" string="Applied" domain="[('state', '=', 'applied')]"/>
+                <separator/>
+                <filter name="new_cards" string="New Cards" domain="[('kind', '=', 'new')]"/>
+                <filter name="updates" string="Changes" domain="[('kind', 'in', ('update', 'archive'))]"/>
+                <filter name="closed" string="Archived in Trello" domain="[('card_closed', '=', True)]"/>
+                <filter name="group_board" string="Board" context="{'group_by': 'board_id'}"/>
+                <filter name="group_kind" string="Type" context="{'group_by': 'kind'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="trello_card_change_view_form" model="ir.ui.view">
+        <field name="name">trello.card.change.form</field>
+        <field name="model">trello.card.change</field>
+        <field name="arch" type="xml">
+            <form create="0">
+                <header>
+                    <button name="action_apply" type="object" string="Apply" class="btn-primary"
+                            invisible="state != 'pending'" groups="project.group_project_manager"/>
+                    <button name="action_ignore" type="object" string="Ignore"
+                            invisible="state != 'pending'" groups="project.group_project_manager"/>
+                    <button name="action_reset" type="object" string="Back to Inbox"
+                            invisible="state != 'ignored' or kind != 'new'" groups="project.group_project_manager"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="kind"/>
+                            <field name="board_id"/>
+                            <field name="trello_url" widget="url"/>
+                            <field name="card_closed"/>
+                            <field name="fetch_date"/>
+                        </group>
+                        <group>
+                            <field name="project_id"/>
+                            <field name="list_map_id"/>
+                            <field name="stage_id"/>
+                            <field name="task_id" readonly="kind != 'new' or state != 'pending'"
+                                   placeholder="Empty: create a new task"
+                                   domain="[('trello_card_id', '=', False)]"/>
+                            <field name="trello_card_id" groups="base.group_no_one"/>
+                        </group>
+                    </group>
+                    <div class="text-muted mb-2" invisible="kind != 'new' or state != 'pending'">
+                        Apply creates a task in the board's project. To attach the card to a task that already
+                        exists instead, choose it in "Task": that task is linked as it is, and only later Trello
+                        changes are proposed.
+                    </div>
+                    <field name="changes_html" nolabel="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_trello_card_change" model="ir.actions.act_window">
+        <field name="name">Trello Inbox</field>
+        <field name="res_model">trello.card.change</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_pending': 1, 'search_default_group_board': 1, 'search_default_group_kind': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing waiting from Trello</p>
+            <p>Boards with "Review Before Applying" put new and changed cards here at each sync,
+                so you choose what reaches your tasks.</p>
+        </field>
+    </record>
+</odoo>

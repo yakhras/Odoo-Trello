@@ -2,6 +2,7 @@
 <odoo>
     <menuitem id="menu_trello_root" name="Trello" parent="project.menu_project_config"
               sequence="90" groups="project.group_project_manager"/>
+    <menuitem id="menu_trello_inbox" name="Inbox" parent="menu_trello_root" action="action_trello_card_change" sequence="5"/>
     <menuitem id="menu_trello_board" name="Boards" parent="menu_trello_root" action="action_trello_board" sequence="10"/>
     <menuitem id="menu_trello_member" name="Members" parent="menu_trello_root" action="action_trello_member" sequence="20"/>
     <menuitem id="menu_trello_label" name="Labels" parent="menu_trello_root" action="action_trello_label" sequence="30"/>

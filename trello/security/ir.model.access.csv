@@ -5,3 +5,5 @@ access_trello_list_map_manager,trello.list.map manager,model_trello_list_map,pro
 access_trello_list_map_user,trello.list.map user,model_trello_list_map,project.group_project_user,1,0,0,0
 access_trello_member_manager,trello.member manager,model_trello_member,project.group_project_manager,1,1,1,1
 access_trello_member_user,trello.member user,model_trello_member,project.group_project_user,1,0,0,0
+access_trello_card_change_manager,trello.card.change manager,model_trello_card_change,project.group_project_manager,1,1,1,1
+access_trello_card_change_user,trello.card.change user,model_trello_card_change,project.group_project_user,1,0,0,0

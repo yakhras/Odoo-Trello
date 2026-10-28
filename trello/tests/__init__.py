@@ -4,4 +4,5 @@
 from . import test_api
 from . import test_board_workflow
 from . import test_sync
+from . import test_inbox
 from . import test_migration

@@ -5,6 +5,7 @@ from . import trello_api
 from . import trello_member
 from . import trello_list_map
 from . import trello_board
+from . import trello_card_change
 from . import project
 from . import ir_attachment
 from . import mail_message

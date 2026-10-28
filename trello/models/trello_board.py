@@ -64,6 +64,11 @@ class TrelloBoard(models.Model):
     last_sync = fields.Datetime(readonly=True)
     comments_since = fields.Datetime(readonly=True, help="Comments older than this are already imported.")
     last_error = fields.Text(readonly=True)
+    review_changes = fields.Boolean(string='Review Before Applying', default=True,
+                                    help="New and changed cards wait in the Trello Inbox until you apply or ignore "
+                                         "them. When unchecked, the sync creates and updates tasks directly.")
+    change_ids = fields.One2many('trello.card.change', 'board_id', string='Trello Inbox')
+    pending_change_count = fields.Integer(compute='_compute_pending_change_count')
 
     _trello_id_uniq = models.Constraint('UNIQUE(trello_id)', 'This Trello board is already registered.')
     _project_uniq = models.Constraint('UNIQUE(project_id)', 'This project is already linked to another Trello board.')
@@ -72,6 +77,11 @@ class TrelloBoard(models.Model):
     def _compute_unmapped_count(self):
         for board in self:
             board.unmapped_count = len(board.list_map_ids.filtered(lambda l: l.state == 'unmapped'))
+
+    @api.depends('change_ids.state')
+    def _compute_pending_change_count(self):
+        for board in self:
+            board.pending_change_count = len(board.change_ids.filtered(lambda c: c.state == 'pending'))
 
     @api.onchange('link_mode')
     def _onchange_link_mode(self):
@@ -159,6 +169,17 @@ class TrelloBoard(models.Model):
         for board in self:
             board._load_lists()
 
+    def action_open_inbox(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.env._("Trello Inbox"),
+            'res_model': 'trello.card.change',
+            'view_mode': 'list,form',
+            'domain': [('board_id', '=', self.id)],
+            'context': {'search_default_pending': 1, 'search_default_group_kind': 1},
+        }
+
     def action_pause(self):
         self.filtered(lambda b: b.state == 'active').state = 'paused'
 
@@ -179,6 +200,7 @@ class TrelloBoard(models.Model):
                 if board.project_id.trello_board_id == board.trello_id:
                     board.project_id.trello_board_id = False
             board.list_map_ids.unlink()
+            board.change_ids.unlink()
             board.write({
                 'state': 'draft',
                 'link_mode': 'existing' if board.project_id else 'new',
@@ -252,13 +274,15 @@ class TrelloBoard(models.Model):
             "(unmapped lists), %(comments)s comments, %(attachments)s attachments.",
             created=stats['created'], updated=stats['updated'], archived=stats['archived'],
             skipped=stats['skipped'], comments=stats['comments'], attachments=stats['attachments'])
+        if stats['pending']:
+            message += ' ' + self.env._("%s card(s) waiting in the Trello Inbox.", stats['pending'])
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': self.env._("Trello sync done"),
                 'message': message,
-                'type': 'warning' if stats['skipped'] else 'success',
+                'type': 'warning' if stats['skipped'] or stats['pending'] else 'success',
                 'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
             },
         }
@@ -304,8 +328,9 @@ class TrelloBoard(models.Model):
         stats['comments'] = self._sync_comments()
 
         vals = {'last_sync': started, 'last_error': False}
-        if not stats['skipped']:
-            # Keep re-reading comments of skipped cards until their list is mapped.
+        if not stats['skipped'] and not stats['pending_new']:
+            # Keep re-reading comments of skipped cards until their list is mapped,
+            # and of new cards until they are applied from the Trello Inbox.
             vals['comments_since'] = started
         self.write(vals)
         return stats
@@ -394,15 +419,58 @@ class TrelloBoard(models.Model):
             vals.update(converters[key]())
         return vals
 
+    def _card_incoming(self, card, line, tags, members, checklists):
+        """JSON-comparable snapshot of what Trello says now about ``card``."""
+        card_tags = self.env['project.tags'].browse([tags[l].id for l in card.get('idLabels', []) if l in tags])
+        users = self.env['res.users'].browse(
+            [members[m].user_id.id for m in card.get('idMembers', []) if m in members and members[m].user_id])
+        return {
+            'name': card.get('name') or self.env._("(no title)"),
+            'description': str(self._card_description(card, checklists.get(card['id'], []))),
+            'date_deadline': card.get('due') or False,
+            'list': card['idList'],
+            'tag_ids': sorted(card_tags.ids),
+            'user_ids': sorted(users.ids),
+            'priority': '1' if any(card_tags.mapped('trello_priority')) else '0',
+            'state': '1_done' if card.get('dueComplete') else line.task_state,
+            'active': not card.get('closed'),
+            'trello_url': card.get('url'),
+        }
+
+    def _create_task_from_card(self, card_id, incoming, line):
+        vals = self._task_vals(incoming, line, incoming.keys())
+        vals.update({
+            'project_id': self.project_id.id,
+            'trello_card_id': card_id,
+            'trello_board_ref_id': self.id,
+            'trello_card_name': incoming['name'],
+            'trello_synced_values': incoming,
+        })
+        return self.env['project.task'].with_context(
+            trello_sync=True, mail_create_nolog=True, mail_create_nosubscribe=True,
+            mail_auto_subscribe_no_notify=True).create(vals)
+
+    def _update_task_from_card(self, task, incoming, line, changed):
+        vals = self._task_vals(incoming, line, changed)
+        vals['trello_synced_values'] = incoming
+        task.with_context(trello_sync=True, mail_auto_subscribe_no_notify=True).write(vals)
+
     def _sync_cards(self, cards, tags, members, checklists):
         stats = defaultdict(int)
-        Task = self.env['project.task'].with_context(
-            active_test=False, trello_sync=True, mail_create_nolog=True,
-            mail_create_nosubscribe=True, mail_auto_subscribe_no_notify=True)
+        Task = self.env['project.task'].with_context(active_test=False)
+        Change = self.env['trello.card.change']
+        review = self.review_changes
         line_by_list = {line.trello_list_id: line for line in self.list_map_ids}
         existing = self._task_by_card({card['id'] for card in cards})
         Task.browse([t.id for t in existing.values() if not t.trello_board_ref_id]).write(
             {'trello_board_ref_id': self.id})
+        pending = {c.trello_card_id: c for c in self.change_ids.filtered(lambda c: c.state == 'pending')}
+        if not review and pending:
+            Change.browse([c.id for c in pending.values()]).unlink()  # the sync applies the cards directly now
+            pending = {}
+        ignored = set(self.change_ids.filtered(lambda c: c.state == 'ignored' and c.kind == 'new')
+                      .mapped('trello_card_id'))
+        proposals = {}  # {trello_card_id: trello.card.change values}, review mode only
         seen = set()
         for card in cards:
             seen.add(card['id'])
@@ -410,34 +478,15 @@ class TrelloBoard(models.Model):
             if not line or line.state != 'mapped' or not line.stage_id:
                 stats['skipped'] += 1
                 continue
-            card_tags = self.env['project.tags'].browse([tags[l].id for l in card.get('idLabels', []) if l in tags])
-            users = self.env['res.users'].browse(
-                [members[m].user_id.id for m in card.get('idMembers', []) if m in members and members[m].user_id])
-            # JSON-comparable snapshot of what Trello says now.
-            incoming = {
-                'name': card.get('name') or self.env._("(no title)"),
-                'description': str(self._card_description(card, checklists.get(card['id'], []))),
-                'date_deadline': card.get('due') or False,
-                'list': card['idList'],
-                'tag_ids': sorted(card_tags.ids),
-                'user_ids': sorted(users.ids),
-                'priority': '1' if any(card_tags.mapped('trello_priority')) else '0',
-                'state': '1_done' if card.get('dueComplete') else line.task_state,
-                'active': not card.get('closed'),
-                'trello_url': card.get('url'),
-            }
+            incoming = self._card_incoming(card, line, tags, members, checklists)
             task = existing.get(card['id'])
             if not task:
-                vals = self._task_vals(incoming, line, incoming.keys())
-                vals.update({
-                    'project_id': self.project_id.id,
-                    'trello_card_id': card['id'],
-                    'trello_board_ref_id': self.id,
-                    'trello_card_name': incoming['name'],
-                    'trello_synced_values': incoming,
-                })
-                Task.create(vals)
-                stats['created'] += 1
+                if not review:
+                    self._create_task_from_card(card['id'], incoming, line)
+                    stats['created'] += 1
+                elif card['id'] not in ignored:
+                    proposals[card['id']] = {'kind': 'new', 'list_map_id': line.id,
+                                             'incoming': incoming, 'changed_keys': list(incoming)}
                 continue
             if task.trello_card_name != incoming['name']:
                 task.trello_card_name = incoming['name']  # always current, whatever the task title is
@@ -451,17 +500,87 @@ class TrelloBoard(models.Model):
             changed = [key for key, value in incoming.items() if last.get(key) != value]
             if 'list' in changed and task.project_id != self.project_id:
                 changed.remove('list')  # the list's stage belongs to the board's project, not the task's new one
-            if changed:
-                vals = self._task_vals(incoming, line, changed)
-                vals['trello_synced_values'] = incoming
-                task.with_context(trello_sync=True, mail_auto_subscribe_no_notify=True).write(vals)
+            if not changed:
+                if last != incoming:
+                    task.trello_synced_values = incoming
+            elif review:
+                archived = 'active' in changed and not incoming['active']
+                proposals[card['id']] = {'kind': 'archive' if archived else 'update', 'task_id': task.id,
+                                         'list_map_id': line.id, 'incoming': incoming, 'changed_keys': changed}
+            else:
+                self._update_task_from_card(task, incoming, line, changed)
                 stats['updated'] += 1
-            elif last != incoming:
-                task.trello_synced_values = incoming
-        gone = Task.browse([t.id for card_id, t in existing.items() if card_id not in seen and t.active])
+        gone = Task
+        for card_id, task in existing.items():
+            if card_id in seen or not task.active:
+                continue
+            last = task.trello_synced_values or {}
+            if not review:
+                gone |= task
+            elif last.get('active', True):  # not proposed again once the archive was ignored
+                proposals[card_id] = {'kind': 'archive', 'task_id': task.id, 'list_map_id': False,
+                                      'incoming': dict(last, active=False), 'changed_keys': ['active'],
+                                      'name': task.trello_card_name or task.name, 'trello_url': task.trello_url}
         gone.write({'active': False})
         stats['archived'] = len(gone)
+        if review:
+            self._store_proposals(proposals, pending)
+            stats['pending'] = len(proposals)
+            stats['pending_new'] = len([p for p in proposals.values() if p['kind'] == 'new'])
         return stats
+
+    def _store_proposals(self, proposals, pending):
+        """Create or refresh one pending Trello Inbox line per card; drop the lines nothing proposes anymore."""
+        Change = self.env['trello.card.change']
+        Change.flush_model(['state'])  # create() inserts at once: lines applied/ignored meanwhile must be written first
+        now = fields.Datetime.now()
+        for card_id, vals in proposals.items():
+            incoming = vals['incoming']
+            vals.setdefault('name', incoming.get('name'))
+            vals.setdefault('trello_url', incoming.get('trello_url'))
+            vals['card_closed'] = not incoming.get('active', True)
+            change = pending.pop(card_id, None)
+            if not change:
+                Change.create(dict(vals, board_id=self.id, trello_card_id=card_id, fetch_date=now))
+            elif (change.incoming, change.changed_keys, change.kind) != (incoming, vals['changed_keys'], vals['kind']):
+                change.write(dict(vals, fetch_date=now))  # task_id chosen on a new card is kept
+        # The card went back to the synced values, was deleted before being imported, or its list was unmapped.
+        Change.browse([c.id for c in pending.values()]).unlink()
+
+    def _apply_card_change(self, change):
+        """Do what a Trello Inbox line proposes."""
+        self.ensure_one()
+        Task = self.env['project.task'].with_context(active_test=False)
+        incoming, line = change.incoming, change.list_map_id
+        if change.kind == 'new':
+            linked = Task.search([('trello_card_id', '=', change.trello_card_id)], limit=1)
+            if linked:
+                raise UserError(self.env._("Card '%(card)s' is already linked to task '%(task)s'.",
+                                           card=change.name, task=linked.display_name))
+            if change.task_id:
+                if change.task_id.trello_card_id:
+                    raise UserError(self.env._("Task '%s' is already linked to another Trello card.",
+                                               change.task_id.display_name))
+                # Linking keeps the task as it is; only later Trello changes are proposed.
+                change.task_id.with_context(trello_sync=True).write({
+                    'trello_card_id': change.trello_card_id,
+                    'trello_board_ref_id': self.id,
+                    'trello_url': incoming['trello_url'],
+                    'trello_card_name': incoming['name'],
+                    'trello_synced_values': incoming,
+                })
+                return
+            if not line or line.state != 'mapped' or not line.stage_id:
+                raise UserError(self.env._("Map the Trello list of card '%s' first.", change.name))
+            change.task_id = self._create_task_from_card(change.trello_card_id, incoming, line)
+            return
+        task = change.task_id
+        changed = list(change.changed_keys)
+        if 'list' in changed and task.project_id != self.project_id:
+            changed.remove('list')  # task moved to another project since the card was fetched
+        if 'list' in changed and (not line or not line.stage_id):
+            raise UserError(self.env._("Map the Trello list of card '%s' first.", change.name))
+        self._update_task_from_card(task, incoming, line, changed)
 
     def _sync_attachments(self):
         api_client = self.env['trello.api']

@@ -28,6 +28,7 @@ The sync runs **one way, from Trello to Odoo**. It polls Trello on a schedule, s
   - uploaded images, audio, PDFs and other files are copied into Odoo
   - link attachments are kept as links
   - files larger than the **Max attachment size** setting (default 25 MB) stay as links to Trello
+- **Trello Inbox.** By default a sync only lists new, changed and archived cards in an Inbox. You apply or ignore each one, so nothing fetched gets mixed into your tasks unseen. It can be turned off per board.
 - **Your Odoo edits are kept.** A task stays linked to its card even when you rename it or move it to another project. A sync only overwrites a field that changed in Trello since the last sync. The **Trello** tab on the task shows the card's current name when it differs from the task title.
 - **Nothing is ever deleted:**
   - a card deleted in Trello archives its task
@@ -69,6 +70,16 @@ The sync runs **one way, from Trello to Odoo**. It polls Trello on a schedule, s
 3. On the **List Mappings** tab, choose **Merge into existing stage** or **Create new stage** for each list, plus the task state for its cards. Then click **Activate**.
 4. Click **Sync Now**, or wait for the scheduled action **Trello: Sync active boards**, which runs every 15 minutes.
 5. Under **Trello → Members**, link each Trello member to an Odoo user so tasks get assignees. Members are matched by name automatically when possible.
+
+### Trello Inbox
+Every board has **Review Before Applying**, checked by default. While it is checked, a sync doesn't touch your tasks. It puts what it fetched under **Project → Configuration → Trello → Inbox**, one line per card:
+- **New card**: a card with no task yet. **Apply** creates the task. To attach the card to a task you already have, pick it in **Task** first; that task is linked as it is.
+- **Card changed**: the card changed in Trello since the last sync. The line shows each changed field, with its value in Odoo now and in Trello. **Apply** writes only those fields.
+- **Card archived/deleted**: **Apply** archives the task.
+
+**Ignore** keeps the task as it is. The same change isn't proposed again, but a later change to the card is. An ignored new card stays out of the Inbox until you click **Back to Inbox** on its line. Syncing again refreshes a waiting line instead of adding a second one. The board's **Inbox** button shows what is waiting for that board.
+
+Comments and attachments of a new card are imported once you apply it. Those of linked tasks keep arriving directly, because they only add to the task. Uncheck **Review Before Applying** to let the sync create and update tasks directly.
 
 Other buttons on the board:
 - **Pause** / **Resume** stop and restart the sync.

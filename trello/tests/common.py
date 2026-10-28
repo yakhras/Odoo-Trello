@@ -125,9 +125,10 @@ class TrelloCase(TransactionCase):
         self.Board.action_fetch_boards()
         return self.Board.search([('trello_id', '=', BOARD)])
 
-    def activate_board(self, project=None):
+    def activate_board(self, project=None, review=False):
         board = self.fetch_board()
-        board.write({'link_mode': 'existing' if project else 'new', 'project_id': project.id if project else False})
+        board.write({'link_mode': 'existing' if project else 'new', 'project_id': project.id if project else False,
+                     'review_changes': review})
         board.action_confirm()
         board.action_activate()
         return board

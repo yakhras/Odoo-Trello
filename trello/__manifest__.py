@@ -3,7 +3,7 @@
 
 {
     'name': 'Trello',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'summary': 'Import Trello boards, lists, cards, comments and attachments into Odoo Projects',
     'description': """
 Trello -> Odoo one-way synchronisation
@@ -12,6 +12,7 @@ Trello -> Odoo one-way synchronisation
 * List -> Stage control stage (merge into existing stage or create a new one)
 * Cards -> Tasks (description, checklists, deadline, labels, members, priority, state)
 * Comments -> chatter notes, attachments -> task attachments
+* Trello Inbox: review new and changed cards before they reach tasks (per board)
 * Polling via scheduled action (no webhooks required)
 """,
     'category': 'Services/Project',
@@ -26,6 +27,7 @@ Trello -> Odoo one-way synchronisation
         'data/ir_cron.xml',
         'views/trello_board_views.xml',
         'views/trello_member_views.xml',
+        'views/trello_card_change_views.xml',
         'views/project_views.xml',
         'views/res_config_settings_views.xml',
         'views/menus.xml',
