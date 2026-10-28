@@ -230,3 +230,6 @@ __marimo__/
 
 # Local working notes (not part of the module)
 working_history/
+
+# Task notes for the local assistant (not part of the module)
+command.md
