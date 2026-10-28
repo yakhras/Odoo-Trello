@@ -1,0 +1,9 @@
+id,name,model_id,group_id/id,operation,domain
+access_trello_board_manager,trello.board manager,trello.board,project.group_project_manager,crud,
+access_trello_board_user,trello.board user,trello.board,project.group_project_user,r,
+access_trello_list_map_manager,trello.list.map manager,trello.list.map,project.group_project_manager,crud,
+access_trello_list_map_user,trello.list.map user,trello.list.map,project.group_project_user,r,
+access_trello_member_manager,trello.member manager,trello.member,project.group_project_manager,crud,
+access_trello_member_user,trello.member user,trello.member,project.group_project_user,r,
+access_trello_card_change_manager,trello.card.change manager,trello.card.change,project.group_project_manager,crud,
+access_trello_card_change_user,trello.card.change user,trello.card.change,project.group_project_user,r,

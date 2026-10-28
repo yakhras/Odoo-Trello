@@ -3,7 +3,7 @@
 
 {
     'name': 'Trello',
-    'version': '19.0.1.3.0',
+    'version': '20.0.1.3.0',
     'summary': 'Import Trello boards, lists, cards, comments and attachments into Odoo Projects',
     'description': """
 Trello -> Odoo one-way synchronisation
@@ -23,7 +23,7 @@ Trello -> Odoo one-way synchronisation
     'depends': ['project', 'mail'],
     'external_dependencies': {'python': ['requests']},
     'data': [
-        'security/ir.model.access.csv',
+        'security/ir.access.csv',
         'data/ir_cron.xml',
         'views/trello_board_views.xml',
         'views/trello_member_views.xml',

@@ -19,8 +19,8 @@ class ResConfigSettings(models.TransientModel):
 
     def _trello_save_credentials(self):
         ICP = self.env['ir.config_parameter'].sudo()
-        ICP.set_param('trello.api_key', (self.trello_api_key or '').strip())
-        ICP.set_param('trello.api_token', (self.trello_api_token or '').strip())
+        ICP.set_str('trello.api_key', (self.trello_api_key or '').strip())
+        ICP.set_str('trello.api_token', (self.trello_api_token or '').strip())
 
     def action_trello_test_connection(self):
         self.ensure_one()

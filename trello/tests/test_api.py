@@ -29,8 +29,8 @@ class TestTrelloApi(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.ICP = cls.env['ir.config_parameter'].sudo()
-        cls.ICP.set_param('trello.api_key', 'test-key')
-        cls.ICP.set_param('trello.api_token', 'test-token')
+        cls.ICP.set_str('trello.api_key', 'test-key')
+        cls.ICP.set_str('trello.api_token', 'test-token')
         cls.api = cls.env['trello.api']
 
     def setUp(self):
@@ -46,7 +46,7 @@ class TestTrelloApi(TransactionCase):
         self.assertEqual((params['key'], params['token']), ('test-key', 'test-token'))
 
     def test_missing_credentials(self):
-        self.ICP.set_param('trello.api_token', '')
+        self.ICP.set_str('trello.api_token', '')
         with self.assertRaises(UserError):
             self.api._request('/members/me')
 

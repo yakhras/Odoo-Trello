@@ -155,6 +155,9 @@ class TrelloBoard(models.Model):
                 board.project_id = self.env['project.project'].create({
                     'name': board.name,
                     'trello_board_id': board.trello_id,
+                    # Odoo 20 gives a new project default stages (New, In Progress, Done,
+                    # Cancelled); the board's lists are its stages, so start without them.
+                    'type_ids': [],
                 })
             else:
                 board.project_id.trello_board_id = board.trello_id
@@ -338,7 +341,7 @@ class TrelloBoard(models.Model):
     def _sync_labels(self, labels):
         """Return {trello_label_id: project.tags}. Tags are global in Odoo, so labels match by name."""
         Tag = self.env['project.tags']
-        param = self.env['ir.config_parameter'].sudo().get_param('trello.priority_labels', 'urgent,high priority')
+        param = self.env['ir.config_parameter'].sudo().get_str('trello.priority_labels', 'urgent,high priority')
         priority_names = {n.strip().lower() for n in (param or '').split(',') if n.strip()}
         result = {}
         for label in labels:
@@ -584,7 +587,7 @@ class TrelloBoard(models.Model):
 
     def _sync_attachments(self):
         api_client = self.env['trello.api']
-        max_mb = int(self.env['ir.config_parameter'].sudo().get_param('trello.max_attachment_mb', 25) or 25)
+        max_mb = int(self.env['ir.config_parameter'].sudo().get_str('trello.max_attachment_mb', 25) or 25)
         cards = api_client._request(f'/boards/{self.trello_id}/cards', {
             'filter': 'all',
             'fields': 'id',

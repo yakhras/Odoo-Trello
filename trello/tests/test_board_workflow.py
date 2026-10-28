@@ -82,6 +82,7 @@ class TestBoardWorkflow(TrelloCase):
         stages = board.list_map_ids.stage_id
         self.assertEqual(stages.mapped('name'), ['To Do', 'Doing', 'Done'])
         self.assertTrue(all(board.project_id in stage.project_ids for stage in stages))
+        self.assertEqual(board.project_id.type_ids, stages, "only the board's lists, no default stages")
         self.assertEqual(set(board.list_map_ids.mapped('state')), {'mapped'})
 
     def test_activate_existing_merges_into_its_stage(self):

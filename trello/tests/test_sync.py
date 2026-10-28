@@ -126,7 +126,7 @@ class TestSync(TrelloCase):
             [('res_model', '=', 'project.task'), ('res_id', '=', self.task('c1').id)])
         by_id = {a.trello_attachment_id: a for a in attachments}
         self.assertEqual(set(by_id), {'a1', 'a2', 'a3'}, "no attachment is imported twice")
-        self.assertEqual((by_id['a1'].type, by_id['a1'].raw), ('binary', b'PNGDATA'))
+        self.assertEqual((by_id['a1'].type, by_id['a1'].raw.content), ('binary', b'PNGDATA'))
         self.assertEqual((by_id['a2'].type, by_id['a2'].url), ('url', 'https://docs.example.com/spec'))
         self.assertEqual((by_id['a3'].type, by_id['a3'].url), ('url', BIG_URL), "too large: kept as a link")
         self.assertEqual(self.download_calls, [UPLOAD_URL])

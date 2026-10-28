@@ -116,7 +116,7 @@ for name, login in (('Ann Smith', 'ann'), ('Omar Haddad', 'omar')):
                              groups: [(6, 0, [env.ref('project.group_project_user').id])]})
 
 # An existing project the Marketing board will be linked to, with its own stages.
-marketing = env['project.project'].create({'name': 'Marketing Plan'})
+marketing = env['project.project'].create({'name': 'Marketing Plan', 'type_ids': []})  # its own stages only
 for seq, stage in enumerate(['Backlog', 'In Progress', 'Published']):
     env['project.task.type'].create({'name': stage, 'sequence': seq, 'project_ids': [(4, marketing.id)]})
 

@@ -73,8 +73,8 @@ class TrelloCase(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         ICP = cls.env['ir.config_parameter'].sudo()
-        ICP.set_param('trello.api_key', 'test-key')
-        ICP.set_param('trello.api_token', 'test-token')
+        ICP.set_str('trello.api_key', 'test-key')
+        ICP.set_str('trello.api_token', 'test-token')
         cls.Board = cls.env['trello.board']
         cls.Project = cls.env['project.project']
         cls.Task = cls.env['project.task'].with_context(active_test=False)

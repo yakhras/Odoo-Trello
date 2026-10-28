@@ -23,8 +23,8 @@ class TrelloApi(models.AbstractModel):
 
     def _credentials(self):
         ICP = self.env['ir.config_parameter'].sudo()
-        key = ICP.get_param('trello.api_key')
-        token = ICP.get_param('trello.api_token')
+        key = ICP.get_str('trello.api_key')
+        token = ICP.get_str('trello.api_token')
         if not key or not token:
             raise UserError(self.env._("Trello API key and token are not set (Project > Configuration > Settings > Trello)."))
         return key, token
