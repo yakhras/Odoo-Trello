@@ -9,8 +9,8 @@ class ProjectProject(models.Model):
 
     trello_board_id = fields.Char(string='Trello Board ID', copy=False, index='btree_not_null', readonly=True)
 
-    _trello_board_uniq = models.Constraint('UNIQUE(trello_board_id)',
-                                           'This Trello board is already linked to another project.')
+    _sql_constraints = [('trello_board_uniq', 'UNIQUE(trello_board_id)',
+                         'This Trello board is already linked to another project.')]
 
 
 class ProjectTask(models.Model):
@@ -27,7 +27,7 @@ class ProjectTask(models.Model):
                                             "then overwrite the task.")
 
     # One task per card, whatever project the task was moved to.
-    _trello_card_uniq = models.Constraint('UNIQUE(trello_card_id)', 'This Trello card is already linked to a task.')
+    _sql_constraints = [('trello_card_uniq', 'UNIQUE(trello_card_id)', 'This Trello card is already linked to a task.')]
 
 
 class ProjectTags(models.Model):

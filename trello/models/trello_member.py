@@ -16,4 +16,4 @@ class TrelloMember(models.Model):
     user_id = fields.Many2one('res.users', string='Odoo User', domain=[('share', '=', False)],
                               help="Tasks assigned to this Trello member are assigned to this user.")
 
-    _trello_id_uniq = models.Constraint('UNIQUE(trello_id)', 'This Trello member already exists.')
+    _sql_constraints = [('trello_id_uniq', 'UNIQUE(trello_id)', 'This Trello member already exists.')]

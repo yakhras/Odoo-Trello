@@ -3,7 +3,7 @@
 
 {
     'name': 'Trello',
-    'version': '19.0.1.3.0',
+    'version': '18.0.1.3.0',
     'summary': 'Import Trello boards, lists, cards, comments and attachments into Odoo Projects',
     'description': """
 Trello -> Odoo one-way synchronisation

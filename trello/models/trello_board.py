@@ -70,8 +70,10 @@ class TrelloBoard(models.Model):
     change_ids = fields.One2many('trello.card.change', 'board_id', string='Trello Inbox')
     pending_change_count = fields.Integer(compute='_compute_pending_change_count')
 
-    _trello_id_uniq = models.Constraint('UNIQUE(trello_id)', 'This Trello board is already registered.')
-    _project_uniq = models.Constraint('UNIQUE(project_id)', 'This project is already linked to another Trello board.')
+    _sql_constraints = [
+        ('trello_id_uniq', 'UNIQUE(trello_id)', 'This Trello board is already registered.'),
+        ('project_uniq', 'UNIQUE(project_id)', 'This project is already linked to another Trello board.'),
+    ]
 
     @api.depends('list_map_ids.state')
     def _compute_unmapped_count(self):

@@ -1,6 +1,6 @@
 # Trello
 
-[![tests](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml/badge.svg?branch=19.0)](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml)
+[![tests](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml/badge.svg?branch=18.0)](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml)
 
 An Odoo module that imports your [Trello](https://trello.com) boards into Odoo Projects through the Trello REST API. Lists become stages, cards become tasks, and comments, checklists and attachments come along. You decide, board by board and list by list, where everything lands, so nothing is duplicated.
 
@@ -35,15 +35,15 @@ The sync runs **one way, from Trello to Odoo**. It polls Trello on a schedule, s
   - **Unlink** detaches a board but keeps the project and its tasks
 
 ## Requirements
-- Odoo 19.0 (Community or Enterprise). It depends only on `project` and `mail`.
+- Odoo 18.0 (Community or Enterprise). It depends only on `project` and `mail`.
 - The Python package `requests`, which comes with Odoo. If the optional package `markdown` is installed, card descriptions keep their formatting; without it they are imported as plain text with clickable links.
 - A Trello account, and an API key + token (see Configuration).
 - Outgoing HTTPS from the Odoo server to `api.trello.com` and `trello.com`.
 
 ## Installation
-1. Clone the repository on the `19.0` branch next to your other addons:
+1. Clone the repository on the `18.0` branch next to your other addons:
    ```
-   git clone -b 19.0 https://github.com/yakhras/Odoo-Trello.git
+   git clone -b 18.0 https://github.com/yakhras/Odoo-Trello.git
    ```
 2. Add the clone's folder to `addons_path` and restart Odoo.
 3. Go to Apps, update the apps list, and install **Trello**.

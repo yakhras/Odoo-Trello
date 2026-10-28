@@ -46,8 +46,8 @@ class TrelloListMap(models.Model):
                              default='unmapped', required=True, readonly=True,
                              help="Cards in unmapped lists are skipped by the sync.")
 
-    _board_list_uniq = models.Constraint('UNIQUE(board_id, trello_list_id)',
-                                         'This Trello list is already mapped for this board.')
+    _sql_constraints = [('board_list_uniq', 'UNIQUE(board_id, trello_list_id)',
+                         'This Trello list is already mapped for this board.')]
 
     @api.onchange('mode', 'stage_id')
     def _onchange_mapping(self):

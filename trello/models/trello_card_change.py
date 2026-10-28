@@ -57,8 +57,13 @@ class TrelloCardChange(models.Model):
     ], default='pending', required=True, readonly=True, index=True)
     fetch_date = fields.Datetime(string='Fetched On', readonly=True)
 
-    _pending_card_uniq = models.UniqueIndex("(trello_card_id) WHERE (state = 'pending')",
-                                            'This Trello card is already waiting in the Trello Inbox.')
+    def init(self):
+        # One pending line per card. Odoo 18 has no models.UniqueIndex, and a partial index
+        # (WHERE ...) can't be an _sql_constraints entry, so it is created here.
+        self.env.cr.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS trello_card_change__pending_card_uniq
+            ON trello_card_change (trello_card_id) WHERE (state = 'pending')
+        """)
 
     @api.depends('incoming', 'changed_keys', 'task_id', 'list_map_id')
     def _compute_changes_html(self):
