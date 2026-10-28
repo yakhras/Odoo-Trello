@@ -1,6 +1,6 @@
 # Trello
 
-[![tests](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml/badge.svg)](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml)
+[![tests](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml/badge.svg?branch=19.0)](https://github.com/yakhras/Odoo-Trello/actions/workflows/tests.yml)
 
 An Odoo module that imports your [Trello](https://trello.com) boards into Odoo Projects through the Trello REST API. Lists become stages, cards become tasks, and comments, checklists and attachments come along. You decide, board by board and list by list, where everything lands, so nothing is duplicated.
 

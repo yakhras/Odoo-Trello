@@ -1,18 +1,25 @@
 name: tests
 
+# Same file on every series branch: the Odoo image is the branch name (18.0, 19.0, 20.0).
 on:
   push:
+    branches: ["*.0"]
   pull_request:
+  workflow_call:        # from release.yml, which runs on a tag and passes the series
+    inputs:
+      series:
+        type: string
+        required: true
 
 jobs:
   odoo-tests:
     runs-on: ubuntu-latest
     container:
-      image: odoo:19.0
+      image: odoo:${{ inputs.series || github.base_ref || github.ref_name }}
       options: --user root
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: odoo
           POSTGRES_PASSWORD: odoo
@@ -27,9 +34,12 @@ jobs:
 
       - name: Install the module and run its tests
         run: |
+          module=$(dirname "$(ls */__manifest__.py)")
           odoo --db_host postgres --db_user odoo --db_password odoo -d test \
                --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE" \
-               -i trello --test-tags /trello \
+               -i "$module" --test-tags "/$module" \
                --stop-after-init --http-port=8099 2>&1 | tee test.log
-          grep -q "0 failed, 0 error(s)" test.log
+          # "of 0 tests" means Odoo refused to load the module: that is a failure too.
+          grep -qE "0 failed, 0 error\(s\) of [1-9][0-9]* tests" test.log
           ! grep -E "^[0-9-]+ [0-9:,]+ [0-9]+ (ERROR|CRITICAL) " test.log
+          ! grep -E "module $module.*(incompatible|not installable)" test.log

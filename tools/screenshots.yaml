@@ -1,0 +1,108 @@
+# Screenshot spec for C:\Odoo\scripts\odoo_shots.py (syntax in that file's docstring).
+# Captions live on the site page (front matter `screens`), not here.
+module: trello
+viewport: [1440, 900]
+shots:
+  - name: settings
+    open: /odoo/settings#project
+    wait: "#trello_api"
+    steps:
+      - scroll: "#trello_options"
+    marks: ["#trello_api", "#trello_options"]
+    covers: [trello.res_config_settings_view_form_trello]
+
+  - name: boards
+    open: /odoo/action-trello.action_trello_board
+    wait: .o_list_table .o_group_header
+    steps:
+      - click_all: .o_group_header:not(.o_group_open)
+    marks: ["th[data-name='project_id']", "th[data-name='state']"]
+    covers: [trello.action_trello_board, trello.trello_board_view_list, trello.trello_board_view_search,
+             trello.menu_trello_root, trello.menu_trello_board]
+
+  - name: board_lists
+    open: /odoo/action-trello.action_trello_board
+    wait: .o_list_table .o_group_header
+    steps:
+      - click_all: .o_group_header:not(.o_group_open)
+      - click: ".o_data_row:has-text('Marketing Plan')"
+      - wait: .o_form_view .o_statusbar_status
+    marks: [".o_field_widget[name='link_mode']", ".o_field_widget[name='list_map_ids']",
+            "button[name='action_activate']"]
+    covers: [trello.trello_board_view_form]
+
+  - name: board_active
+    open: /odoo/action-trello.action_trello_board
+    wait: .o_list_table .o_group_header
+    steps:
+      - click_all: .o_group_header:not(.o_group_open)
+      - click: ".o_data_row:has-text('Website Redesign')"
+      - wait: .o_form_view .o_statusbar_status
+    marks: [.o_form_view .alert-warning, ".o_field_widget[name='list_map_ids'] tr:has-text('Ideas')",
+            "button[name='action_sync']", ".oe_stat_button:has-text('Inbox')"]
+
+  - name: inbox
+    open: /odoo/action-trello.action_trello_card_change
+    wait: .o_list_table .o_group_header
+    steps:            # grouped by board, then by type: unfold every level
+      - click_all: .o_group_header:not(.o_group_open)
+    marks: ["td[name='kind']", "td[name='task_id']", ".o_data_row button[name='action_apply']"]
+    covers: [trello.action_trello_card_change, trello.trello_card_change_view_list,
+             trello.trello_card_change_view_search, trello.menu_trello_inbox]
+
+  - name: inbox_change
+    open: /odoo/action-trello.action_trello_card_change
+    wait: .o_list_table .o_group_header
+    steps:
+      - click_all: .o_group_header:not(.o_group_open)
+      - click: ".o_data_row:has-text('spam protection') td[name='name']"
+      - wait: .o_form_view .o_statusbar_status
+    marks: [".o_field_widget[name='kind']", ".o_field_widget[name='changes_html']",
+            ".o_form_view button[name='action_apply']"]
+    covers: [trello.trello_card_change_view_form]
+
+  - name: tasks
+    open: /odoo/action-project.open_view_project_all
+    wait: .o_kanban_record
+    steps:
+      - click: ".o_kanban_record:has-text('Website Redesign')"
+      - wait: .o_kanban_renderer .o_kanban_group
+    marks: [".o_kanban_group:has-text('In Progress') .o_kanban_record:has-text('Home page hero')"]
+
+  - name: task
+    open: /odoo/action-project.open_view_project_all
+    wait: .o_kanban_record
+    steps:
+      - click: ".o_kanban_record:has-text('Website Redesign')"
+      - wait: .o_kanban_renderer .o_kanban_group
+      - click: ".o_kanban_record:has-text('Home page hero')"
+      - wait: .o-mail-Message
+      - click: ".o-mail-Chatter-topbar button:has(.fa-paperclip)"
+      - wait: ".o-mail-AttachmentList, .o-mail-AttachmentContainer"
+    marks: [".o_field_widget[name='description']", ".o-mail-AttachmentList, .o-mail-AttachmentContainer",
+            ".o-mail-Message:has-text('First mockup')"]
+
+  - name: task_trello
+    open: /odoo/action-project.open_view_project_all
+    wait: .o_kanban_record
+    steps:
+      - click: ".o_kanban_record:has-text('Website Redesign')"
+      - wait: .o_kanban_renderer .o_kanban_group
+      - click: ".o_kanban_record:has-text('Blog layout')"
+      - wait: .o_form_view .o_notebook
+      - click: ".o_notebook a.nav-link:has-text('Trello')"
+    marks: [".o_field_widget[name='name']", ".o_field_widget[name='trello_card_name']",
+            ".o_field_widget[name='trello_url']"]
+    covers: [trello.view_task_form_trello]
+
+  - name: members
+    open: /odoo/action-trello.action_trello_member
+    wait: .o_list_table .o_data_row
+    marks: ["th[data-name='user_id']"]
+    covers: [trello.action_trello_member, trello.trello_member_view_list, trello.menu_trello_member]
+
+  - name: labels
+    open: /odoo/action-trello.action_trello_label
+    wait: .o_list_table .o_data_row
+    marks: ["th[data-name='trello_priority']"]
+    covers: [trello.action_trello_label, trello.trello_label_view_list, trello.menu_trello_label]

@@ -1,0 +1,56 @@
+name: release
+
+# Push a tag equal to the manifest version (e.g. 20.0.1.2.2) on its series branch:
+# the tests run on that series, then a GitHub release is created with
+# <module>-<version>.zip (the module folder only) and its SHA-256 attached.
+# yaserakhras.com downloads that zip when the site is built.
+on:
+  push:
+    tags: ["*.0.*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      series: ${{ steps.v.outputs.series }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Tag must equal the manifest version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          module=$(dirname "$(ls */__manifest__.py)")
+          version=$(python3 -c "import ast,sys; print(ast.literal_eval(open(sys.argv[1]).read())['version'])" "$module/__manifest__.py")
+          if [ "$tag" != "$version" ]; then echo "tag $tag != manifest $version"; exit 1; fi
+          echo "series=$(echo "$tag" | cut -d. -f1-2)" >> "$GITHUB_OUTPUT"
+
+  tests:
+    needs: meta
+    uses: ./.github/workflows/tests.yml
+    with:
+      series: ${{ needs.meta.outputs.series }}
+
+  release:
+    needs: [meta, tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the zip and create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          module=$(dirname "$(ls */__manifest__.py)")
+          zip="$module-$tag.zip"
+          zip -qr "$zip" "$module" -x '*/__pycache__/*' '*.pyc'
+          sha256sum "$zip" > "$zip.sha256"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$zip" "$zip.sha256" --clobber
+          else
+            gh release create "$tag" "$zip" "$zip.sha256" --title "$tag" \
+               --target "${{ needs.meta.outputs.series }}" --generate-notes \
+               $([ "$(git ls-remote --heads origin | sed 's#.*refs/heads/##' | grep -E '^[0-9]+\.0$' | sort -V | tail -1)" = "${{ needs.meta.outputs.series }}" ] || echo --latest=false)
+          fi
