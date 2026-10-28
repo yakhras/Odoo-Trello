@@ -1,6 +1,8 @@
 # Copyright 2026 Yaser Akhras
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
+import re
+
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 
@@ -101,7 +103,7 @@ class TestInbox(TrelloCase):
         self.sync()
         html = self.pending('c1').changes_html
         # Both columns: 10:00 UTC is 1:00 PM in Istanbul, the date format follows the language.
-        self.assertEqual(html.count('01:00 PM'), 2, html)
+        self.assertEqual(len(re.findall(r'\b0?1:00 PM', html)), 2, html)  # 18.0: 1:00, 19+: 01:00
         self.assertNotIn('10:00', html, "no UTC time")
 
     def test_ignored_change_is_not_proposed_again(self):
