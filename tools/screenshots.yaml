@@ -77,7 +77,7 @@ shots:
       - wait: .o_kanban_renderer .o_kanban_group
       - click: ".o_kanban_record:has-text('Home page hero')"
       - wait: .o-mail-Message
-      - click: ".o-mail-Chatter-topbar button:has(.fa-paperclip)"
+      - click: .o-mail-Chatter-attachFiles
       - wait: ".o-mail-AttachmentList, .o-mail-AttachmentContainer"
     marks: [".o_field_widget[name='description']", ".o-mail-AttachmentList, .o-mail-AttachmentContainer",
             ".o-mail-Message:has-text('First mockup')"]
@@ -90,7 +90,7 @@ shots:
       - wait: .o_kanban_renderer .o_kanban_group
       - click: ".o_kanban_record:has-text('Blog layout')"
       - wait: .o_form_view .o_notebook
-      - click: ".o_notebook a.nav-link:has-text('Trello')"
+      - click: ".o_notebook .nav-link:has-text('Trello')"
     marks: [".o_field_widget[name='name']", ".o_field_widget[name='trello_card_name']",
             ".o_field_widget[name='trello_url']"]
     covers: [trello.view_task_form_trello]
