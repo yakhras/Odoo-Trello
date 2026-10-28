@@ -6,6 +6,7 @@ from markupsafe import Markup
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import html2plaintext
+from odoo.tools.misc import format_datetime
 
 from .trello_board import _parse_dt
 
@@ -75,13 +76,17 @@ class TrelloCardChange(models.Model):
             value = html2plaintext(value or '').strip()
             return value if len(value) <= limit else value[:limit] + '…'
 
+        def when(value):
+            # In the user's timezone, as the task form shows it (both values are UTC).
+            return value and format_datetime(self.env, value, dt_format='short')
+
         for change in self:
             incoming = change.incoming or {}
             task = change.task_id if change.kind != 'new' else Task
             show = {
                 'name': lambda: (task.name, incoming['name']),
                 'description': lambda: (text(task.description), text(incoming['description'])),
-                'date_deadline': lambda: (task.date_deadline, _parse_dt(incoming['date_deadline'])),
+                'date_deadline': lambda: (when(task.date_deadline), when(_parse_dt(incoming['date_deadline']))),
                 'list': lambda: (task.stage_id.name, change.list_map_id.stage_id.name or change.list_map_id.name),
                 'tag_ids': lambda: (', '.join(task.tag_ids.mapped('name')),
                                     ', '.join(Tag.browse(incoming['tag_ids']).exists().mapped('name'))),

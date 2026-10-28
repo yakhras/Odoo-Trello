@@ -94,6 +94,16 @@ class TestInbox(TrelloCase):
         self.sync()
         self.assertFalse(self.pending())
 
+    def test_changed_deadline_is_shown_in_user_timezone(self):
+        self.import_all()
+        self.env.user.tz = 'Europe/Istanbul'  # UTC+3 all year
+        self.card('c1')['due'] = '2026-11-08T10:00:00.000Z'
+        self.sync()
+        html = self.pending('c1').changes_html
+        # Both columns: 10:00 UTC is 1:00 PM in Istanbul, the date format follows the language.
+        self.assertEqual(html.count('01:00 PM'), 2, html)
+        self.assertNotIn('10:00', html, "no UTC time")
+
     def test_ignored_change_is_not_proposed_again(self):
         self.import_all()
         self.card('c1')['name'] = 'Landing page'
